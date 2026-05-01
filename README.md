@@ -90,7 +90,10 @@ python -m PyInstaller FREDDEX-base.spec
 -------------------------
 LICENSE
 -------------------------
-Le code source de FREDDEX est distribué sous licence MIT. Il est développé par Camille Beluffi-Marin, et l’Unité INSERM UMR 1112 en est le titulaire des droits (Copyright (c) 2026 INSERM UMR 1112).
+Le code source de FREDDEX est distribué sous licence MIT. Il est développé par Camille Beluffi-Marin, et l’Unité INSERM UMR 1112 en est le titulaire des droits (Copyright (c) 2026 INSERM UMR 1112). 
+
+Ce code source est archivé dans Software Heritage, garantissant sa conservation à long terme ainsi que la reproductibilité des résultats de recherche.
+[swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc](https://archive.softwareheritage.org/swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc)
 
 FREDDEX s’inscrit dans un cadre de recherche clinique dédié à l’interopérabilité des données de santé, notamment avec BaMaRa et la Banque Nationale de Données Maladies Rares (BNDMR).
 
