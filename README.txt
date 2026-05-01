@@ -75,5 +75,8 @@ LICENSE
 -----------------
 The FREDDEX source code is distributed under the MIT License.
 It is developed by Camille Beluffi-Marin, and the INSERM UMR 1112 unit is the legal rights holder (Copyright (c) 2026 INSERM UMR 1112).
+This source code is archived in Software Heritage:
+[swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc](https://archive.softwareheritage.org/swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc)
+ensuring long-term preservation and reproducibility of the research outputs.
 FREDDEX is part of a clinical research framework focused on health data interoperability, particularly with BaMaRa and the French National Bank of Rare Diseases (BNDMR).
 This work is supported by the French State through the French National Research Agency (ANR), under the France 2030 investment program (ANR-21-PMRB-0009).
