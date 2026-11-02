@@ -1,100 +1,73 @@
-FREDDEX
-Présentation
+# FREDDEX
 
-FREDDEX est un outil de traitement et d’intégration de données issues de BaMaRa vers la structure FREDD.
+## Présentation
+
+FREDDEX est un outil de traitement et d'intégration de données issues de BaMaRa vers la structure FREDD.
 
 FREDDEX réalise les étapes suivantes :
 
-- Lecture des fichiers BaMaRa (Excel multi-feuilles)
-- Transformation et normalisation des données vers le modèle FREDD
-- Application de règles métiers complexes (gènes, variations, diagnostics)
-- Génération des structures compatibles avec la base cible
-- (Optionnel) Création des patients et envoi des questionnaires via API SKEZIA
+- lecture des fichiers BaMaRa (Excel multi-feuilles) ;
+- transformation et normalisation des données vers le modèle FREDD ;
+- application de règles métiers (gènes, variations, diagnostics) ;
+- génération des structures compatibles avec la base cible ;
+- (optionnel) création des patients et envoi des questionnaires via l'API SKEZIA.
 
-2 Modes d’utilisation sont possibles : avec ou sans exploitation de l'API.
+Deux modes d'utilisation existent : **avec** ou **sans** l'API SKEZIA (mode « Hors ligne »).
 
--------------------------
-⚠️ Important 
--------------------------
+## ⚠️ Important
 
-- Ce code n’est pas générique. Il est fortement couplé à l’architecture FREDD/SKEZIA. 
-Le code partagé repose donc fortement sur :
-	- la structure de données FREDD,
-	- l’environnement SKEZIA,
-	- ainsi que l’API SKEZIA pour la création de patients et l’envoi des questionnaires.
-Il nécessite obligatoirement des adaptations pour tout autre contexte.
-- FREDDEX nécessite l’installation des dépendances listées dans le fichier requirements.txt afin de fonctionner correctement.
-- Ce document et le logiciel associé ne prétendent pas être exempts de défauts ni constituer une solution parfaite. Ils s’inscrivent dans une démarche évolutive, où des améliorations restent possibles. Tout retour d’expérience ou suggestion est donc vivement encouragé afin de contribuer à leur amélioration continue.
+- Ce code n'est **pas générique**. Il est fortement couplé à la structure de données FREDD, à l'e-CRF SKEZIA et à son API. Il nécessite des adaptations pour tout autre contexte.
+- Les fichiers de métadonnées propres à FREDD (correspondances de variables, structure du questionnaire, codes de maladies, configuration des centres, identifiants chiffrés) **ne sont pas fournis** dans ce dépôt.
+- Les dépendances sont listées dans `requirements.txt` (Python ≥ 3.10).
+- Ce logiciel ne prétend pas être exempt de défauts ; tout retour d'expérience est bienvenu.
 
--------------------------
-0. Avant utilisation
--------------------------
+## 1. Configuration préalable
 
-Peu importe le mode d'utilisation choisi, il faut avant tout réaliser une configuration préalable reposant sur plusieurs fichiers de mapping permettant d’assurer la correspondance entre les données BaMaRa et la structure cible FREDD implémentée dans l’e-CRF SKEZIA. 
-- Le fichier principal files/mapping_BaMaRa_FREDD.xlsx doit être complété pour définir le lien entre les variables BaMaRa et les variables de la base cible, ainsi que les correspondances des modalités de réponse. Dans le code partagé, ces éléments sont directement alignés avec la configuration de l’e-CRF FREDD dans SKEZIA (métadonnées et valeurs autorisées). Les variables standardisées ne doivent pas être modifiées car elles assurent la cohérence du lien entre les deux systèmes.
+Dans un dossier `files/` à placer à côté du code, à compléter selon votre contexte :
 
-- Un fichier Survey.csv est également requis avec une structure identique (notamment Variable / Field name, Field type, Field input type) afin de décrire les caractéristiques des variables sources, en particulier leur type et leur format d’entrée.
+| Fichier | Rôle |
+|---|---|
+| `files/map_BaMaRa_FREDD.xlsx` | Correspondance entre variables BaMaRa et variables cibles, et entre modalités de réponse. Les « noms standardisés » ne doivent pas être modifiés. |
+| `files/Survey.csv` | Export du questionnaire (`Variable / Field name`, `Field type`, `Field input type`, `Choices`) : types et formats des variables. |
+| `files/codes_MR/*.txt` | Codes ORPHA retenus (séparés par des virgules). |
+| `files/fichier_config.csv` | Un centre par ligne : `Nom_centre`, `Numero_centre`, `Ficher_codes_MR`, `questionnaire_id`. Si l'API n'est pas utilisée, `questionnaire_id` peut valoir `0`. |
+| `files/orphanet/*.xml` | Nomenclature Orphanet. |
+| `files/cles/` | Clés et identifiants chiffrés (mode API uniquement, voir ci-dessous). |
 
-- Le fichier files/codes_MR/code_MR.txt doit contenir la liste des codes ORPHA (séparés par des virgules), utilisés pour filtrer les patients BaMaRa selon les maladies rares
+## 2. Mode complet (avec l'API SKEZIA)
 
-- Configurer les centres fournisseurs de données à partir des informations contenues dans le fichier files/fichier_config.csv. Pour chaque centre, les paramètres suivants doivent être correctement définis : ID du centre, questionnaire associé et fichiers liés.
+Création des patients dans SKEZIA et envoi des questionnaires remplis.
 
-Une attention particulière doit être portée à la définition de l’ID du questionnaire SKEZIA :
+Pour chaque projet SKEZIA, générer un couple clé / identifiants chiffrés : `python scripts_admin/create_keys.py` (première création) ou `python scripts_admin/rotate_keys.py` (rotation). **La clé ne doit jamais être distribuée avec le fichier chiffré** : elle est lue en priorité dans la variable d'environnement `FREDDEX_FERNET_KEY_<numéro du centre>`.
 
-   - si l’API est utilisée, l’ID du questionnaire doit être correctement renseigné ;
-   - si l’API n’est pas utilisée, le champ questionnaire ID peut être initialisé à "0".
+Si le réseau inspecte le HTTPS avec une autorité interne, FREDDEX utilise le magasin de certificats du système (`truststore`) ; `FREDDEX_TRUSTSTORE=0` le désactive.
 
--------------------------
-1. Mode complet (avec API SKEZIA)
--------------------------
+## 3. Mode hors ligne (sans l'API)
 
-Ce mode permet :
+Choisir « Hors ligne » dans l'écran d'accueil. Aucune connexion réseau n'est utilisée.
 
-- la création des patients dans SKEZIA
-- l’envoi des questionnaires remplis
+**Étape 1/2** — transformation des données BaMaRa. Deux fichiers sont produits dans le dossier `output/` :
 
-Prérequis :
+- `FREDD_export_<date>.xlsx` : les données transformées ;
+- `FREDD_participants_<date>.csv` : fichier d'import des participants (nom, prénom, date de naissance) à charger dans SKEZIA **avant** les données.
 
-Avant exécution, il est nécessaire de :
+**Étape 2/2** — après import des participants, exporter leur liste depuis SKEZIA (`Answers.csv`), puis la fournir avec l'export de données. FREDDEX associe l'identifiant SKEZIA de chaque patient (colonne `ID`, en première position) et écrit `FREDD_export_<date>_import_skezia.csv`, au format attendu par l'import de données de la plateforme (valeurs entre guillemets pour les champs texte, listes et boutons radio ; liste JSON pour les choix multiples). Les valeurs hors des choix du questionnaire sont laissées vides et signalées.
 
-- Configurer les centres fournisseurs de données à partir des informations contenues dans le fichier files/fichier_config.csv. Pour chaque centre, les paramètres suivants doivent être correctement définis : ID du centre, questionnaire associé et fichiers liés.
+## 4. Générer un .exe
 
-Une attention particulière doit être portée à la définition de l’ID du questionnaire SKEZIA :
-
-   - si l’API est utilisée, l’ID du questionnaire doit être correctement renseigné ;
-   - si l’API n’est pas utilisée, le champ questionnaire ID peut être initialisé à "0".
-
-- Générer les clés API -> Utiliser le script create_keys (python create_keys.py) pour générer un coucle de clés dans le dossier cle. Ces clés permettent l’authentification à l’API SKEZIA et d'envoyer des données vers l'API de manière sécurisée. Attention : il faut générer un couple de clé pour chaque projet SKEZIA
-
--------------------------
-2. Mode offline (sans API)
--------------------------
-
-Ce mode permet uniquement :
-- la transformation des données BaMaRa → FREDD
-- la génération d’un fichier Excel final structuré
-Activation
-
-Pour activer ce mode :
-
-Ouvrir FREDDEX-base.py et commenter le bloc indiqué entre (*) dans la fonction "traitement_complet".
-
--------------------------
-3. Generer un .exe
--------------------------
-Si souhaité, il est possible de générer un exécutable (.exe) afin de faciliter la diffusion et l’utilisation du logiciel sur d’autres environnements ne disposant pas de Python.
-La génération de l’exécutable peut être réalisée avec PyInstaller à partir du fichier de spécification fourni :
-
+```
+set FREDDEX_CENTRE=NOM_DU_CENTRE
 python -m PyInstaller FREDDEX-base.spec
+```
 
--------------------------
-LICENSE
--------------------------
-Le code source de FREDDEX est distribué sous licence MIT. Il est développé par Camille Beluffi-Marin, et l’Unité INSERM UMR 1112 en est le titulaire des droits (Copyright (c) 2026 INSERM UMR 1112). 
+Le fichier `.spec` embarque les fichiers de `files/` et le nom du centre ; il suppose que `files/` est complet.
 
-Ce code source est archivé dans Software Heritage, garantissant sa conservation à long terme ainsi que la reproductibilité des résultats de recherche.
-[swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc](https://archive.softwareheritage.org/swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc)
+## Licence
 
-FREDDEX s’inscrit dans un cadre de recherche clinique dédié à l’interopérabilité des données de santé, notamment avec BaMaRa et la Banque Nationale de Données Maladies Rares (BNDMR).
+Code distribué sous licence MIT. Développé par Camille Beluffi-Marin ; l'Unité INSERM UMR 1112 en est titulaire des droits (Copyright (c) 2026 INSERM UMR 1112).
 
-Ce travail est soutenu par l’État français à travers l’Agence Nationale de la Recherche (ANR), dans le cadre du programme d’investissement France 2030 (ANR-21-PMRB-0009).
+Archive Software Heritage : [swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc](https://archive.softwareheritage.org/swh:1:dir:158393792c8d88a59f4afa24914773112407b0dc)
+
+FREDDEX s'inscrit dans un cadre de recherche clinique dédié à l'interopérabilité des données de santé, notamment avec BaMaRa et la Banque Nationale de Données Maladies Rares (BNDMR).
+
+Ce travail est soutenu par l'État français à travers l'Agence Nationale de la Recherche (ANR), dans le cadre du programme d'investissement France 2030 (ANR-21-PMRB-0009).

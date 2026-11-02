@@ -1,5 +1,13 @@
-pandas
-numpy
-requests
-cryptography
+# Version ranges tested against this codebase.
+pandas>=2.1,<4.0
+numpy>=1.24,<3.0
+requests>=2.31,<3.0
+cryptography>=42.0,<47.0
+# Reading and writing .xlsx files (BaMaRa exports in, FREDD exports out)
+openpyxl>=3.1,<4.0
+# Validates HTTPS certificates with the operating system's trust store (Windows) instead of
+# certifi's bundle, for networks that inspect HTTPS with an internal CA. Requires Python >= 3.10.
+# Set FREDDEX_TRUSTSTORE=0 to disable.
+truststore>=0.10,<1.0
+# Only needed to build the distributable .exe
 pyinstaller
